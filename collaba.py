@@ -166,6 +166,12 @@ def cooperative_astar(agent_list, grid):
                 for pos, time in paths[agent]:
                     reservationTable.reserve(pos.x, pos.y, time, agent.id)
                 
+                last_pos = paths[agent][-1]
+
+                for i in range(100):
+                    reservationTable.reserve(last_pos[0].x,last_pos[0].y,last_pos[1]+i,agent.id)
+
+                
                 break
             
             # Skip if already visited
@@ -229,6 +235,11 @@ complex_agents = [
         Agent(4, Position(2, 2), Position(5, 5)),
         Agent(5, Position(5, 3), Position(1, 6))
     ]
+
+def sortfunc(agent):
+    return manhattan_distance(agent.start,agent.goal)
+
+complex_agents = sorted(complex_agents,key=sortfunc)
 # Find paths
 # Identify prohibited positions (start and goal positions of agents)
 prohibited_positions = set()
@@ -311,8 +322,8 @@ def visualize(grid, paths):
     plt.show()
 # Visualize the paths
 
-if paths:
-    visualize(grid, paths)
+# if paths:
+#     visualize(grid, paths)
 
 
 visualize(complex_grid, complex_paths)
