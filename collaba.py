@@ -165,6 +165,7 @@ def cooperative_astar(agent_list, grid):
                 paths[agent] = reconstruct_path(current)
                 for pos, time in paths[agent]:
                     reservationTable.reserve(pos.x, pos.y, time, agent.id)
+                
                 break
             
             # Skip if already visited
@@ -219,6 +220,7 @@ agents = [
     Agent(2, Position(0, 3), Position(6, 3))
 ]
 grid = np.zeros([7,7])
+grid[3][3] = 1
 complex_grid = np.zeros([8,8])
 complex_agents = [
         Agent(1, Position(3, 0), Position(3, 7)),
@@ -228,6 +230,20 @@ complex_agents = [
         Agent(5, Position(5, 3), Position(1, 6))
     ]
 # Find paths
+# Identify prohibited positions (start and goal positions of agents)
+prohibited_positions = set()
+for agent in complex_agents:
+    prohibited_positions.add((agent.start.x, agent.start.y))
+    prohibited_positions.add((agent.goal.x, agent.goal.y))
+
+# Add 1s to the complex grid without placing on prohibited positions
+positions_added = 0  # Counter for added positions
+for _ in range(10):
+    x = np.random.randint(0, 8)
+    y = np.random.randint(0, 8)
+    if (x, y) not in prohibited_positions and complex_grid[x, y] == 0:
+        complex_grid[x, y] = 1
+        positions_added += 1
 paths = cooperative_astar(agents, grid)
 
 complex_paths = cooperative_astar(complex_agents, complex_grid)
@@ -256,6 +272,12 @@ def visualize(grid, paths):
     ax.set_xlim(-0.5, grid.shape[1] - 0.5)
     ax.set_ylim(-0.5, grid.shape[0] - 0.5)
 
+    # Visualize obstacles
+    for x in range(grid.shape[0]):
+        for y in range(grid.shape[1]):
+            if grid[x, y] == 1:  # Obstacle
+                rect = plt.Rectangle((y - 0.5, x - 0.5), 1, 1, color="black")
+                ax.add_patch(rect)
     # Define a set of colors for agents
     colors = plt.cm.get_cmap("tab10", len(paths))
 
