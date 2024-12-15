@@ -108,6 +108,11 @@ def manhattan_distance(pos1, pos2):
 # Each path's route passed into a 3D hash table containing a route's position 
 # & at what time <X,Y,time>. Entries in the table are considered impassable by subsequent
 # agent searches.
+# Encountered issues:
+# - When robot reaches goal, subquent time intervals lack the information of this end state (fixed)
+# - With end state persistentence, there are certain agent-goal configurations where later agents are blocked off from their goal
+#       - Leads to a "lost" agent
+# - If two adjacent agents attempt to travel to eachother's cell at the same time interval, this allows them to "phase through eachother"
                                      
 def cooperative_astar(agent_list, grid):
     print("In CA* \n")
@@ -236,6 +241,8 @@ complex_agents = [
         Agent(5, Position(5, 3), Position(1, 6))
     ]
 
+
+
 def sortfunc(agent):
     return manhattan_distance(agent.start,agent.goal)
 
@@ -271,24 +278,55 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 def visualize(grid, paths):
-    # Initialize figure and axis
-    fig, ax = plt.subplots()
-    ax.set_xticks(range(grid.shape[1]))
-    ax.set_yticks(range(grid.shape[0]))
-    ax.set_xticks(np.arange(-0.5, grid.shape[1], 1), minor=True)
-    ax.set_yticks(np.arange(-0.5, grid.shape[0], 1), minor=True)
-    ax.grid(which="minor", color="black", linestyle='-', linewidth=0.5)
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    ax.set_xlim(-0.5, grid.shape[1] - 0.5)
-    ax.set_ylim(-0.5, grid.shape[0] - 0.5)
+    # Create figure with extra space for text
+    fig = plt.figure(figsize=(8, 9))
+    
+    # Create a gridspec to manage subplot layout
+    gs = plt.GridSpec(2, 1, height_ratios=[1, 8])
+    
+    # Create separate axes for text and grid
+    text_ax = fig.add_subplot(gs[0])
+    grid_ax = fig.add_subplot(gs[1])
+    
+    # Define a set of colors for agents - Move this up before plotting paths
+    colors = plt.cm.get_cmap("tab10", len(paths))
+    
+    # Plot planned paths
+    for idx, (agent, path) in enumerate(paths.items()):
+        path_x = [pos.y for pos, _ in path]
+        path_y = [pos.x for pos, _ in path]
+        
+    
+        color = colors(idx)
+        grid_ax.plot(path_x, path_y, color=color, alpha=0.5, linewidth=1)
+        
+        # Add arrows to show direction
+        for i in range(len(path_x)-1):
+            dx = path_x[i+1] - path_x[i]
+            dy = path_y[i+1] - path_y[i]
+            grid_ax.arrow(path_x[i], path_y[i], dx*0.3, dy*0.3,
+                        head_width=0.1, head_length=0.1, 
+                        color=color, alpha=0.5)
+    
+    text_ax.axis('off')
+    time_text = text_ax.text(0.5, 0.5, '', ha='center', va='center', fontsize=14, transform=text_ax.transAxes)
+
+    grid_ax.set_xticks(range(grid.shape[1]))
+    grid_ax.set_yticks(range(grid.shape[0]))
+    grid_ax.set_xticks(np.arange(-0.5, grid.shape[1], 1), minor=True)
+    grid_ax.set_yticks(np.arange(-0.5, grid.shape[0], 1), minor=True)
+    grid_ax.grid(which="minor", color="black", linestyle='-', linewidth=0.5)
+    grid_ax.set_xticklabels([])
+    grid_ax.set_yticklabels([])
+    grid_ax.set_xlim(-0.5, grid.shape[1] - 0.5)
+    grid_ax.set_ylim(-0.5, grid.shape[0] - 0.5)
 
     # Visualize obstacles
     for x in range(grid.shape[0]):
         for y in range(grid.shape[1]):
             if grid[x, y] == 1:  # Obstacle
                 rect = plt.Rectangle((y - 0.5, x - 0.5), 1, 1, color="black")
-                ax.add_patch(rect)
+                grid_ax.add_patch(rect)
     # Define a set of colors for agents
     colors = plt.cm.get_cmap("tab10", len(paths))
 
@@ -297,8 +335,8 @@ def visualize(grid, paths):
         start = path[0][0]  # Unpack Position object for start
         goal = path[-1][0]  # Unpack Position object for goal
         color = colors(idx)
-        ax.text(start.y, start.x, 'A', color=color, ha='center', va='center', fontsize=14)
-        ax.text(goal.y, goal.x, 'G', color=color, ha='center', va='center', fontsize=14)
+        grid_ax.text(start.y, start.x, 'A', color=color, ha='center', va='center', fontsize=14)
+        grid_ax.text(goal.y, goal.x, 'G', color=color, ha='center', va='center', fontsize=14)
 
     # Create the animation
     frames = max(len(path) for path in paths.values())
@@ -308,16 +346,23 @@ def visualize(grid, paths):
         pos, _ = path[0]  # Unpack first Position object and time
         color = colors(idx)
         patch = plt.Circle((pos.y, pos.x), 0.3, color=color, animated=True)
-        ax.add_patch(patch)
+        grid_ax.add_patch(patch)
         patches.append((patch, path))
 
+    # Add time display text
+    # time_text = grid_ax.text(0.02, 0.98, '', transform=grid_ax.transAxes, fontsize=12)
+
     def update(frame):
+        # Update agent positions
         for patch, path in patches:
             if frame < len(path):
-                pos, _ = path[frame]  # Unpack Position object and time
+                pos, time = path[frame]  # Now we use both position and time
                 patch.center = (pos.y, pos.x)
-        return [patch for patch, _ in patches]
-
+        
+        # Update time display
+        time_text.set_text(f'Time Step: {frame}')
+        
+        return [patch for patch, _ in patches] + [time_text]
     ani = animation.FuncAnimation(fig, update, frames=frames, blit=True, interval=500, repeat=False)
     plt.show()
 # Visualize the paths
