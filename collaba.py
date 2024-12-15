@@ -219,9 +219,18 @@ agents = [
     Agent(2, Position(0, 3), Position(6, 3))
 ]
 grid = np.zeros([7,7])
-
+complex_grid = np.zeros([8,8])
+complex_agents = [
+        Agent(1, Position(3, 0), Position(3, 7)),
+        Agent(2, Position(0, 0), Position(7, 7)),
+        Agent(3, Position(7, 0), Position(0, 7)),
+        Agent(4, Position(2, 2), Position(5, 5)),
+        Agent(5, Position(5, 3), Position(1, 6))
+    ]
 # Find paths
 paths = cooperative_astar(agents, grid)
+
+complex_paths = cooperative_astar(complex_agents, complex_grid)
 
 
 
@@ -279,5 +288,9 @@ def visualize(grid, paths):
     ani = animation.FuncAnimation(fig, update, frames=frames, blit=True, interval=500, repeat=False)
     plt.show()
 # Visualize the paths
+
 if paths:
     visualize(grid, paths)
+
+
+visualize(complex_grid, complex_paths)
