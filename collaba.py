@@ -198,6 +198,124 @@ def cooperative_astar(agent_list, grid):
                 next_y = current.y + action[1]
                 next_time = current.time + 1
 
+                reserve_check = reservationTable.is_reserved(next_x, next_y, next_time)
+                if (reserve_check):
+                    print("Encountered reserved cell at: <%s, %s, time=%s>" % (str(next_x), str(next_y), str(next_time)))
+
+                if (0 <= next_x < len(grid) and 
+                    0 <= next_y < len(grid[0]) and 
+                    grid[next_x][next_y] == 0 and # Check if within valid bounds
+                    not reservationTable.is_reserved(next_x, next_y, next_time)
+                    ):
+
+                    # g-cost (cost from start)
+                    new_cost = current.cost + 1
+
+                    # h-cost (heuristic estimate to goal)
+                    heuristic = manhattan_distance(
+                        Position(next_x, next_y),
+                        agent.goal
+                    )
+                    # f-cost (total estimated cost: f = g + h)
+                    priority = new_cost + heuristic
+                
+
+                    next_node = Node(
+                        priority = priority,
+                        position = Position(next_x, next_y),
+                        time = next_time,
+                        cost = new_cost,
+                        parent = current #
+                    )
+
+                    openlist.put(PrioritizedItem(priority = priority, item = next_node))
+
+    return paths
+
+def hierarchical_cooperative_astar(agent_list, grid):
+    def sortfunc(agent):
+        return manhattan_distance(agent.start,agent.goal)
+    
+    return cooperative_astar(sorted(agent_list,key=sortfunc),grid)
+
+def swapless_cooperative_astar(agent_list, grid):
+    print("In CA* \n")
+    reservationTable = ReservationTable()
+    paths = {}
+    
+
+    # class Agent:
+    #   def __init__(self, id, start, goal):
+    #     self.id = id
+    #     self.start = start
+    #     self.goal = goal
+    for agent in agent_list:
+        print("Agent ID [" + str(agent.id) + "]\n")
+        start = agent.start
+        goal = agent.goal
+        openlist = PriorityQueue(maxsize = 0)
+        closedlist = set()
+
+        # --Node members--
+        # priority = priority
+        # self.x = position.x
+        # self.y = position.y
+        # self.time = time
+        # self.cost = cost
+        # self.parent = parent
+
+        # Initial node
+        start_node = Node(
+            priority = 0,
+            position = start,
+            time = 0,
+            cost = 0
+        )
+        # Wrap the start node in PrioritizedItem
+        openlist.put(PrioritizedItem(priority=0, item=start_node))
+
+        # Node initializer
+        node_count = 0
+        while not openlist.empty():
+            #Current type - Node item
+            current_item = openlist.get()
+            current = current_item.item
+
+            node_count += 1
+
+            print("t= " + str(current.time) + " | Current Node #: " + str(node_count) + " at [" + str(current.x) + " , " + str(current.y) 
+                  + "] - Cost: " + str(current.cost))
+
+            #print(current)
+
+
+            # Reconstruct path and store after path calculation
+            if Position(current.x, current.y) == goal:
+                paths[agent] = reconstruct_path(current)
+                for pos, time in paths[agent]:
+                    reservationTable.reserve(pos.x, pos.y, time, agent.id)
+                
+                last_pos = paths[agent][-1]
+
+                for i in range(100):
+                    reservationTable.reserve(last_pos[0].x,last_pos[0].y,last_pos[1]+i,agent.id)
+
+                
+                break
+            
+            # Skip if already visited
+            current_pos = (current.x, current.y, current.time)
+            if current_pos in closedlist:
+                continue
+            # And add to closed list if not
+            closedlist.add(current_pos)
+
+            # Consider all movement options including wait()
+            for action in Action.get_actions():
+                next_x = current.x + action[0]
+                next_y = current.y + action[1]
+                next_time = current.time + 1
+
                 def check_swap(reservationTable,current,next_x,next_y,next_time):
                     a = reservationTable.get_reserver(next_x,next_y,current.time)
                     b = reservationTable.get_reserver(current.x, current.y, next_time)
@@ -241,12 +359,6 @@ def cooperative_astar(agent_list, grid):
                     openlist.put(PrioritizedItem(priority = priority, item = next_node))
 
     return paths
-
-def hierarchical_cooperative_astar(agent_list, grid):
-    def sortfunc(agent):
-        return manhattan_distance(agent.start,agent.goal)
-    
-    return cooperative_astar(sorted(agent_list,key=sortfunc),grid)
 agents = [
     Agent(1, Position(3, 0), Position(3, 6)),
     Agent(2, Position(0, 3), Position(6, 3))
@@ -289,6 +401,7 @@ swap_agents = [
 swap_grid = np.zeros([7,7])
 
 swap_paths = cooperative_astar(swap_agents, swap_grid)
+swapless_paths = swapless_cooperative_astar(swap_agents,swap_grid)
 # Print results
 for agent, path in paths.items():
     print(f"Agent {agent.id} path:")
@@ -395,3 +508,4 @@ def visualize(grid, paths):
 # visualize(complex_grid, complex_paths)
 
 visualize(swap_grid,swap_paths)
+visualize(swap_grid,swapless_paths)
