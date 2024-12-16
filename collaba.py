@@ -410,6 +410,8 @@ for agent, path in paths.items():
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import os
+from datetime import datetime
 
 def visualize(grid, paths):
     # Create figure with extra space for text
@@ -498,8 +500,16 @@ def visualize(grid, paths):
         
         return [patch for patch, _ in patches] + [time_text]
     ani = animation.FuncAnimation(fig, update, frames=frames, blit=True, interval=500, repeat=False)
+
+    writer = animation.PillowWriter(fps=2,
+                                    metadata=dict(artist='Me'),
+                                    bitrate=1800)
+    
+    save = str(datetime.now().strftime("outputs/%d-%m-%Y_%H-%M-%S.gif"))
+    ani.save(save, writer=writer)
     plt.show()
-# Visualize the paths
+
+visualize(complex_grid, complex_paths)
 
 # if paths:
 #     visualize(grid, paths)
