@@ -19,6 +19,12 @@ class ReservationTable:
     def is_reserved(self, x, y, time):
         return (x, y, time) in self.table
     
+    def get_reserver(self, x, y, time):
+        if (x, y, time) in self.table:
+            return self.table[(x,y,time)]
+        else:
+            return -1
+    
 # The agent start & goal positions in 2d space
 class Agent:
     def __init__(self, id, start, goal):
@@ -192,6 +198,15 @@ def cooperative_astar(agent_list, grid):
                 next_y = current.y + action[1]
                 next_time = current.time + 1
 
+                def check_swap(reservationTable,current,next_x,next_y,next_time):
+                    a = reservationTable.get_reserver(next_x,next_y,current.time)
+                    b = reservationTable.get_reserver(current.x, current.y, next_time)
+                    if a == -1 and b == -1:
+                        return False
+                    elif a == b:
+                        return True
+                    else:
+                        return False
                 reserve_check = reservationTable.is_reserved(next_x, next_y, next_time)
                 if (reserve_check):
                     print("Encountered reserved cell at: <%s, %s, time=%s>" % (str(next_x), str(next_y), str(next_time)))
@@ -199,7 +214,9 @@ def cooperative_astar(agent_list, grid):
                 if (0 <= next_x < len(grid) and 
                     0 <= next_y < len(grid[0]) and 
                     grid[next_x][next_y] == 0 and # Check if within valid bounds
-                    not reservationTable.is_reserved(next_x, next_y, next_time)):
+                    not reservationTable.is_reserved(next_x, next_y, next_time) and
+                    not check_swap(reservationTable,current,next_x,next_y,next_time)
+                    ):
 
                     # g-cost (cost from start)
                     new_cost = current.cost + 1
@@ -225,7 +242,11 @@ def cooperative_astar(agent_list, grid):
 
     return paths
 
-
+def hierarchical_cooperative_astar(agent_list, grid):
+    def sortfunc(agent):
+        return manhattan_distance(agent.start,agent.goal)
+    
+    return cooperative_astar(sorted(agent_list,key=sortfunc),grid)
 agents = [
     Agent(1, Position(3, 0), Position(3, 6)),
     Agent(2, Position(0, 3), Position(6, 3))
@@ -242,11 +263,6 @@ complex_agents = [
     ]
 
 
-
-def sortfunc(agent):
-    return manhattan_distance(agent.start,agent.goal)
-
-complex_agents = sorted(complex_agents,key=sortfunc)
 # Find paths
 # Identify prohibited positions (start and goal positions of agents)
 prohibited_positions = set()
@@ -264,10 +280,15 @@ for _ in range(10):
         positions_added += 1
 paths = cooperative_astar(agents, grid)
 
-complex_paths = cooperative_astar(complex_agents, complex_grid)
+complex_paths = hierarchical_cooperative_astar(complex_agents, complex_grid)
 
+swap_agents = [
+    Agent(1, Position(3, 0), Position(3, 6)),
+    Agent(2, Position(3, 6), Position(3, 0))
+]
+swap_grid = np.zeros([7,7])
 
-
+swap_paths = cooperative_astar(swap_agents, swap_grid)
 # Print results
 for agent, path in paths.items():
     print(f"Agent {agent.id} path:")
@@ -371,4 +392,6 @@ def visualize(grid, paths):
 #     visualize(grid, paths)
 
 
-visualize(complex_grid, complex_paths)
+# visualize(complex_grid, complex_paths)
+
+visualize(swap_grid,swap_paths)
