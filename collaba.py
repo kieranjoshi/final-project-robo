@@ -229,14 +229,14 @@ def cooperative_astar(agent_list, grid):
                     )
 
                     openlist.put(PrioritizedItem(priority = priority, item = next_node))
-
     return paths
+
 
 def hierarchical_cooperative_astar(agent_list, grid):
     def sortfunc(agent):
         return manhattan_distance(agent.start,agent.goal)
-    
     return cooperative_astar(sorted(agent_list,key=sortfunc),grid)
+
 
 def swapless_cooperative_astar(agent_list, grid):
     print("In CA* \n")
@@ -359,6 +359,8 @@ def swapless_cooperative_astar(agent_list, grid):
                     openlist.put(PrioritizedItem(priority = priority, item = next_node))
 
     return paths
+
+
 agents = [
     Agent(1, Position(3, 0), Position(3, 6)),
     Agent(2, Position(0, 3), Position(6, 3))
@@ -392,13 +394,16 @@ for _ in range(10):
         positions_added += 1
 paths = cooperative_astar(agents, grid)
 
+
 complex_paths = hierarchical_cooperative_astar(complex_agents, complex_grid)
+
 
 swap_agents = [
     Agent(1, Position(3, 0), Position(3, 6)),
     Agent(2, Position(3, 6), Position(3, 0))
 ]
 swap_grid = np.zeros([7,7])
+
 
 swap_paths = cooperative_astar(swap_agents, swap_grid)
 swapless_paths = swapless_cooperative_astar(swap_agents,swap_grid)
@@ -407,6 +412,7 @@ for agent, path in paths.items():
     print(f"Agent {agent.id} path:")
     for pos, time in path:
         print(f"t={time}: ({pos.x}, {pos.y})")
+
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -517,5 +523,5 @@ visualize(complex_grid, complex_paths)
 
 # visualize(complex_grid, complex_paths)
 
-visualize(swap_grid,swap_paths)
-visualize(swap_grid,swapless_paths)
+visualize(swap_grid, swap_paths)
+visualize(swap_grid, swapless_paths)
