@@ -505,23 +505,23 @@ def visualize(grid, paths):
         time_text.set_text(f'Time Step: {frame}')
         
         return [patch for patch, _ in patches] + [time_text]
-    ani = animation.FuncAnimation(fig, update, frames=frames, blit=True, interval=500, repeat=False)
+    # ani = animation.FuncAnimation(fig, update, frames=frames, blit=True, interval=500, repeat=False)
 
     writer = animation.PillowWriter(fps=2,
                                     metadata=dict(artist='Me'),
                                     bitrate=1800)
     
-    save = str(datetime.now().strftime("outputs/%d-%m-%Y_%H-%M-%S.gif"))
-    ani.save(save, writer=writer)
+    # save = str(datetime.now().strftime("outputs/%d-%m-%Y_%H-%M-%S.gif"))
+    # ani.save(save, writer=writer)
     plt.show()
 
 visualize(complex_grid, complex_paths)
 
-# if paths:
-#     visualize(grid, paths)
+if paths:
+    visualize(grid, paths)
 
 
-# visualize(complex_grid, complex_paths)
+visualize(complex_grid, complex_paths)
 
 visualize(swap_grid, swap_paths)
 visualize(swap_grid, swapless_paths)
